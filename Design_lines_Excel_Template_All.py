@@ -65,11 +65,9 @@ def paste_series(depth_series,value_series,depth_start_cell,value_start_cell,ws,
     
     return
 
-   
-#################################
 
-## INPUTS
-xls = pd.ExcelFile('./DL_input_file.xlsx')
+############ USER INPUTS ###########################
+xls = pd.ExcelFile('./DL_input_file_original.xlsx')
 main_sheet = pd.read_excel(xls, 'Main', header=None)
 to_plot_cpt = pd.read_excel(xls, 'To_Plot_CPT').dropna()
 to_plot_lab = pd.read_excel(xls, 'To_Plot_Lab').dropna()
@@ -86,17 +84,44 @@ DL_template = main_sheet.iloc[7,1]
 DL_plot_path = main_sheet.iloc[8,1]
 unit_list = main_sheet.iloc[9,1]
 location_list = main_sheet.iloc[10,1]
-depth_bin_file = main_sheet.iloc[11,1]
+#depth_bin_file = main_sheet.iloc[11,1]
+CPT_method_compare = main_sheet.iloc[12,1]
+CPT_method_compare_folder = main_sheet.iloc[13,1]
 
-# Read cpt output GIR tool
+# Read main cpt output GIR tool
 df = pd.read_excel(CPT_parameter_file,sheet_name='All_CPTs')
-# if os.path.exists(depth_bin_file):
-#     depth_bins_df = pd.read_excel(depth_bin_file)
-# else:
-#     depth_bins_df = pd.DataFrame()
+
+# if several cpt correlations are to be plotted, combine all location wise parameter comparison data
+if CPT_method_compare == 'Y':
+    files = glob.glob(os.path.join(CPT_method_compare_folder, "*.xlsx"))
+
+    combined_df = []
+    
+    for file in files:
+        # Read each file
+        df = pd.read_excel(file)
+        
+        # Extract location name from filename
+        # Get the base name
+        base = os.path.splitext(os.path.basename(file))[0]
+        # Split into location + parameter
+        location, parameter = base.rsplit(" ", 1)
+        
+        # Add location name
+        df["LOCA_ID"] = location
+        df["Parameter"] = parameter
+
+        combined_df.append(df)
+    
+    # Combine all files vertically
+    final_df = pd.concat(combined_df, ignore_index=True)
+    
+    # Save to a new Excel file
+    final_df.to_excel("Combined_{parameter}.xlsx", index=False)
+    df = final_df
 
 
-
+###################MAIN CODE #############################
 
 if chart_type == 'Per_Location':
     #loca_id = 'BAL01_GT1_CPTU_06' # for testing
